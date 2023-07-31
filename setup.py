@@ -16,7 +16,7 @@ with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="audiconnectpy",
-    version="1.4.5",
+    version="1.4.6",
     packages=find_packages(),
     author="cyr-ius",
     author_email="cyr-ius@ipocus.net",
