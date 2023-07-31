@@ -612,33 +612,29 @@ class Vehicle:
 
     async def async_fetch_data(self, ntries: int) -> bool:
         """Update."""
-        info = ""
-        try:
-            info = "status"
-            await self.call_update(self.async_update_vehicle, ntries)
-            info = "shortterm"
-            await self.call_update(self.async_update_trip_shortterm, ntries)
-            info = "longterm"
-            await self.call_update(self.async_update_trip_longterm, ntries)
-            info = "cyclic"
-            await self.call_update(self.async_update_trip_cyclic, ntries)
-            info = "position"
-            await self.call_update(self.async_update_position, ntries)
-            info = "climater"
-            await self.call_update(self.async_update_climater, ntries)
-            info = "charger"
-            await self.call_update(self.async_update_charger, ntries)
-            info = "preheater"
-            await self.call_update(self.async_update_preheater, ntries)
-        except Exception as error:  # pylint: disable=broad-except
-            _LOGGER.error(
-                "Unable to update vehicle data %s of %s: %s",
-                info,
-                self.vin,
-                str(error).rstrip("\n"),
-            )
-            return False
-        return True
+        info_calls = {
+            "status" : self.async_update_vehicle,
+            "shortterm" : self.async_update_trip_shortterm,
+            "longterm" : self.async_update_trip_longterm,
+            "cyclic" : self.async_update_trip_cyclic,
+            "position" : self.async_update_position,
+            "climater" : self.async_update_climater,
+            "charger" : self.async_update_charger,
+            "preheater" : self.async_update_preheater
+        }
+        failed = True
+        for info in info_calls:
+            try:
+                await self.call_update(info_calls[info], ntries)
+                failed = False
+            except Exception as error:  # pylint: disable=broad-except
+                _LOGGER.error(
+                    "Unable to update vehicle data %s of %s: %s",
+                    info,
+                    self.vin,
+                    str(error).rstrip("\n"),
+                )
+        return not failed
 
     async def async_update_vehicle(self) -> None:
         """Update vehicle status."""
@@ -789,12 +785,12 @@ class Vehicle:
                 td_cur, td_rst = await self._audi_service.async_get_tripdata(
                     self.vin, kind
                 )
-                if td_cur.trip_supported:
+                print(td_cur, td_rst)
+                if td_cur.data and td_cur.trip_supported:
                     self.states.update(
                         set_attr(f"{kind.lower()}_current", td_cur.attributes)
                     )
-
-                if td_rst.trip_supported:
+                if td_rst.data and td_rst.trip_supported:
                     self.states.update(
                         set_attr(f"{kind.lower()}_reset", td_rst.attributes)
                     )
